@@ -31,11 +31,19 @@ _GCP_CREDENTIALS_SANDBOX_PATH = "/home/user/.config/gcloud/service_account.json"
 # Provider env vars auto-forwarded from .env into the sandbox
 _PROVIDER_ENV_KEYS = [
     # Google Vertex AI
-    "CLAUDE_CODE_USE_VERTEX", "CLOUD_ML_REGION", "ANTHROPIC_VERTEX_PROJECT_ID",
+    "CLAUDE_CODE_USE_VERTEX",
+    "CLOUD_ML_REGION",
+    "ANTHROPIC_VERTEX_PROJECT_ID",
     # Amazon Bedrock
-    "CLAUDE_CODE_USE_BEDROCK", "AWS_REGION", "AWS_ACCESS_KEY_ID", "AWS_SECRET_ACCESS_KEY", "AWS_SESSION_TOKEN",
+    "CLAUDE_CODE_USE_BEDROCK",
+    "AWS_REGION",
+    "AWS_ACCESS_KEY_ID",
+    "AWS_SECRET_ACCESS_KEY",
+    "AWS_SESSION_TOKEN",
     # Microsoft Azure / Foundry
-    "CLAUDE_CODE_USE_FOUNDRY", "AZURE_FOUNDRY_RESOURCE", "AZURE_API_KEY",
+    "CLAUDE_CODE_USE_FOUNDRY",
+    "AZURE_FOUNDRY_RESOURCE",
+    "AZURE_API_KEY",
     # Custom base URL (proxy, self-hosted)
     "ANTHROPIC_BASE_URL",
 ]
@@ -203,11 +211,10 @@ async def run_agent_in_sandbox(
         if gcp_creds_content:
             logger.info("[%s] Uploading GCP credentials to sandbox", request_id)
             await sbx.commands.run(
-                f"mkdir -p {posixpath.dirname(_GCP_CREDENTIALS_SANDBOX_PATH)}", timeout=5
+                f"mkdir -p {posixpath.dirname(_GCP_CREDENTIALS_SANDBOX_PATH)}",
+                timeout=5,
             )
-            await sbx.files.write(
-                _GCP_CREDENTIALS_SANDBOX_PATH, gcp_creds_content
-            )
+            await sbx.files.write(_GCP_CREDENTIALS_SANDBOX_PATH, gcp_creds_content)
 
         # Upload user files to the sandbox (path traversal prevented by model validation)
         if request.files:
@@ -250,7 +257,9 @@ async def run_agent_in_sandbox(
             "agents": sandstorm_config.get("agents"),
             "mcp_servers": sandstorm_config.get("mcp_servers"),
         }
-        await sbx.files.write("/opt/agent-runner/agent_config.json", json.dumps(agent_config))
+        await sbx.files.write(
+            "/opt/agent-runner/agent_config.json", json.dumps(agent_config)
+        )
 
         # Run the SDK query() via the runner script
         logger.info(
@@ -302,6 +311,10 @@ async def run_agent_in_sandbox(
             try:
                 task.result()
             except Exception:
-                logger.warning("[%s] Task exception suppressed (runner likely streamed the error)", request_id, exc_info=True)
+                logger.warning(
+                    "[%s] Task exception suppressed (runner likely streamed the error)",
+                    request_id,
+                    exc_info=True,
+                )
         logger.info("[%s] Destroying sandbox %s", request_id, sbx.sandbox_id)
         await sbx.kill()

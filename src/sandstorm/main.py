@@ -38,7 +38,9 @@ async def health():
     return {
         "status": "ok",
         "env": {
-            "ANTHROPIC_API_KEY": "set" if os.environ.get("ANTHROPIC_API_KEY") else "not set",
+            "ANTHROPIC_API_KEY": "set"
+            if os.environ.get("ANTHROPIC_API_KEY")
+            else "not set",
             "E2B_API_KEY": "set" if os.environ.get("E2B_API_KEY") else "not set",
         },
     }
