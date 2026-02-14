@@ -101,7 +101,22 @@ async def run_agent_in_sandbox(
     request: QueryRequest, request_id: str = ""
 ) -> AsyncGenerator[str, None]:
     """Create an E2B sandbox, run the Claude Agent SDK query(), and yield messages."""
-    queue: asyncio.Queue[str | None] = asyncio.Queue()
+    queue: asyncio.Queue[str | None] = asyncio.Queue(maxsize=10_000)
+    _queue_full_warned = False
+
+    def _enqueue(data: str) -> None:
+        """Put data on the queue, dropping if full (sync callbacks can't await)."""
+        nonlocal _queue_full_warned
+        try:
+            queue.put_nowait(data)
+        except asyncio.QueueFull:
+            if not _queue_full_warned:
+                logger.warning(
+                    "[%s] Queue full (maxsize=%d), dropping messages — consumer can't keep up",
+                    request_id,
+                    queue.maxsize,
+                )
+                _queue_full_warned = True
 
     # Build sandbox env vars: API key + any provider env vars from .env
     sandbox_envs = {"ANTHROPIC_API_KEY": request.anthropic_api_key}
@@ -213,11 +228,11 @@ async def run_agent_in_sandbox(
                 await sbx.commands.run(
                     "node /opt/agent-runner/runner.mjs",
                     timeout=1800,
-                    on_stdout=lambda data: queue.put_nowait(
+                    on_stdout=lambda data: _enqueue(
                         data if isinstance(data, str) else str(data)
                     ),
                     on_stderr=lambda data: (
-                        queue.put_nowait(json.dumps({"type": "stderr", "data": s}))
+                        _enqueue(json.dumps({"type": "stderr", "data": s}))
                         if (s := (data if isinstance(data, str) else str(data)).strip())
                         else None
                     ),
