@@ -2,6 +2,12 @@
 
 All notable changes to Sandstorm will be documented in this file.
 
+## [0.2.5] - 2026-02-14
+
+### Documentation
+
+- document public E2B template in README
+
 ## [0.2.0] - 2026-02-14
 
 ### Bug Fixes
@@ -28,6 +34,7 @@ All notable changes to Sandstorm will be documented in this file.
 
 ### Miscellaneous
 
+- update changelog for v0.2.0
 - pin claude-agent-sdk version for deterministic builds
 - add changelog via git-cliff
 

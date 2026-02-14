@@ -62,15 +62,15 @@ curl -N -X POST http://localhost:8000/query \
   -d '{"prompt": "Find the top 10 trending Python repos on GitHub and summarize each in one sentence"}'
 ```
 
-### Custom E2B Template (optional)
+### E2B Sandbox Template
 
-Build a template with the Agent SDK pre-installed for instant sandbox creation (otherwise the SDK is installed at runtime, ~15s overhead):
+Sandstorm ships with a public pre-built template (`work-43ca/sandstorm`) that's used automatically — no build step needed. The template includes Node.js 24, `@anthropic-ai/claude-agent-sdk`, Python 3, git, ripgrep, and curl.
+
+To customize the template (e.g. add system packages or pre-install other dependencies), edit `build_template.py` and rebuild:
 
 ```bash
 uv run python build_template.py
 ```
-
-Includes: Node.js 24, `@anthropic-ai/claude-agent-sdk`, Python 3, git, ripgrep, curl.
 
 ## How It Works
 
