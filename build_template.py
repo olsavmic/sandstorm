@@ -26,7 +26,8 @@ template = (
         "mkdir -p /opt/agent-runner"
         " && cd /opt/agent-runner"
         " && npm init -y"
-        " && npm install @anthropic-ai/claude-agent-sdk@latest"
+        # Pin SDK version for deterministic builds — update manually when needed
+        " && npm install @anthropic-ai/claude-agent-sdk@0.2.42"
         " && chmod -R 777 /opt/agent-runner",
         user="root",
     )

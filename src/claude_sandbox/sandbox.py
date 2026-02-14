@@ -154,7 +154,8 @@ async def run_agent_in_sandbox(
             "mkdir -p /opt/agent-runner"
             " && cd /opt/agent-runner"
             " && npm init -y"
-            " && npm install @anthropic-ai/claude-agent-sdk@latest",
+            # Pin SDK version to match build_template.py
+            " && npm install @anthropic-ai/claude-agent-sdk@0.2.42",
             timeout=120,
         )
 
