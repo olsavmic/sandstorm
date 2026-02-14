@@ -188,7 +188,7 @@ async def run_agent_in_sandbox(
         try:
             await task
         except Exception:
-            logger.warning("Task exception suppressed (runner likely streamed the error)", exc_info=True)
+            logger.warning("[%s] Task exception suppressed (runner likely streamed the error)", request_id, exc_info=True)
 
     finally:
         logger.info("[%s] Destroying sandbox %s", request_id, sbx.sandbox_id)
