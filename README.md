@@ -1,33 +1,47 @@
 # Sandstorm
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+Run AI agents in secure cloud sandboxes. One API call. Zero infrastructure.
+
+[![Claude Agent SDK](https://img.shields.io/badge/Claude_Agent_SDK-black?logo=anthropic)](https://docs.anthropic.com/en/docs/agents-and-tools/claude-agent-sdk)
+[![E2B](https://img.shields.io/badge/E2B-sandboxed-ff8800.svg)](https://e2b.dev)
+[![OpenRouter](https://img.shields.io/badge/OpenRouter-300%2B_models-6366f1.svg)](https://openrouter.ai)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
-[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftomascupr%2Fsandstorm&env=ANTHROPIC_API_KEY,E2B_API_KEY)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 
 **Hundreds of AI agents running in parallel. Hours-long tasks. Tool use, file access, structured output — each in its own secure sandbox. Sounds hard. It's not.**
 
 ```bash
 curl -N -X POST https://your-sandstorm-host/query \
-  -d '{"prompt": "Scrape the top 50 YC companies, enrich with funding data, save as PNG + CSV and contact founders on LinkedIn"}'
+  -d '{"prompt": "Find the top 10 trending Python repos on GitHub today, clone each one, count lines of code, and return a ranked summary as JSON"}'
 ```
 
-That's the entire integration. One POST request. The agent installs dependencies, fetches live data, builds a database, generates files, and streams every step back to you in real-time. When it's done, the sandbox is destroyed. Nothing persists. Nothing escapes.
+That's the entire integration. Sandstorm wraps the [Claude Agent SDK](https://docs.anthropic.com/en/docs/agents-and-tools/claude-agent-sdk) in isolated [E2B](https://e2b.dev) cloud sandboxes — the agent installs packages, fetches live data, generates files, and streams every step back via SSE. When it's done, the sandbox is destroyed. Nothing persists. Nothing escapes.
 
-Sandstorm wraps the [Claude Agent SDK](https://docs.anthropic.com/en/docs/agents-and-tools/claude-agent-sdk) in isolated [E2B](https://e2b.dev) cloud sandboxes so you can give AI agents full system access without worrying about what they do with it. No Docker setup, no permission systems, no infrastructure to manage. Just a prompt in, results out.
-
-- **Scales to zero effort** -- no infra to manage, no containers to orchestrate, no cleanup to handle
+- **Any model via OpenRouter** -- swap in DeepSeek R1, Qwen 3, Kimi K2, or any of 300+ models through [OpenRouter](https://openrouter.ai)
 - **Full agent power** -- Bash, Read, Write, Edit, Glob, Grep, WebSearch, WebFetch -- all enabled by default
 - **Safe by design** -- every request gets a fresh VM that's destroyed after, with zero state leakage
 - **Real-time streaming** -- watch the agent work step-by-step via SSE, not just the final answer
 - **Configure once, query forever** -- drop a `sandstorm.json` for structured output, subagents, MCP servers, and system prompts
 - **File uploads** -- send code, data, or configs for the agent to work with
-- **BYOK** -- bring your own Anthropic + E2B keys, or set them once in `.env`
+
+### Get Started
+
+```bash
+git clone https://github.com/tomascupr/sandstorm.git && cd sandstorm
+cp .env.example .env   # add ANTHROPIC_API_KEY + E2B_API_KEY
+uv sync && uv run python -m uvicorn sandstorm.main:app --reload
+```
+
+If Sandstorm is useful, consider giving it a [star](https://github.com/tomascupr/sandstorm) — it helps others find it.
+
+[![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https%3A%2F%2Fgithub.com%2Ftomascupr%2Fsandstorm&env=ANTHROPIC_API_KEY,E2B_API_KEY)
 
 ## Table of Contents
 
 - [Quickstart](#quickstart)
 - [How It Works](#how-it-works)
 - [Features](#features)
+- [OpenRouter](#openrouter)
 - [Configuration](#configuration)
 - [API Reference](#api-reference)
 - [Client Examples](#client-examples)
@@ -41,7 +55,7 @@ Sandstorm wraps the [Claude Agent SDK](https://docs.anthropic.com/en/docs/agents
 - Python 3.11+
 - [uv](https://docs.astral.sh/uv/)
 - [E2B](https://e2b.dev) API key
-- [Anthropic](https://console.anthropic.com) API key
+- [Anthropic](https://console.anthropic.com) API key or [OpenRouter](https://openrouter.ai) API key
 
 ### Setup
 
@@ -197,6 +211,66 @@ Attach external tools via [MCP](https://modelcontextprotocol.io) in `sandstorm.j
 | `headers` | `object` | Auth headers for remote servers |
 | `env` | `object` | Environment variables |
 
+## OpenRouter
+
+Sandstorm works with any model available on [OpenRouter](https://openrouter.ai) -- not just Claude. Run agents powered by GPT-4o, Qwen, Llama, DeepSeek, Gemini, Mistral, or any of 300+ models, all through the same API.
+
+### Setup
+
+Add three env vars to `.env`:
+
+```bash
+ANTHROPIC_BASE_URL=https://openrouter.ai/api
+OPENROUTER_API_KEY=sk-or-...
+ANTHROPIC_DEFAULT_SONNET_MODEL=anthropic/claude-sonnet-4  # or any OpenRouter model ID
+```
+
+That's it. The agent now routes through OpenRouter. Your existing `ANTHROPIC_API_KEY` can stay in `.env` -- Sandstorm automatically clears it in the sandbox when OpenRouter is active.
+
+### Using Open-Source Models
+
+Remap the SDK's model aliases to any OpenRouter model:
+
+```bash
+# Route "sonnet" to Qwen
+ANTHROPIC_DEFAULT_SONNET_MODEL=qwen/qwen3-max-thinking
+
+# Route "opus" to DeepSeek
+ANTHROPIC_DEFAULT_OPUS_MODEL=deepseek/deepseek-r1
+
+# Route "haiku" to a fast, cheap model
+ANTHROPIC_DEFAULT_HAIKU_MODEL=qwen/qwen3-30b-a3b
+```
+
+Then use the alias in your request or `sandstorm.json`:
+
+```bash
+curl -N -X POST http://localhost:8000/query \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Analyze this CSV and build a chart", "model": "sonnet"}'
+```
+
+The agent runs on Qwen, DeepSeek, or whatever you mapped -- with full tool use, file access, and streaming.
+
+### Per-Request Keys
+
+Pass `openrouter_api_key` in the request body for multi-tenant setups:
+
+```bash
+curl -N -X POST http://localhost:8000/query \
+  -d '{"prompt": "...", "openrouter_api_key": "sk-or-...", "model": "sonnet"}'
+```
+
+### How It Works
+
+The Claude Agent SDK supports custom API endpoints via `ANTHROPIC_BASE_URL`. OpenRouter exposes an Anthropic-compatible API, so the SDK sends requests to OpenRouter instead of Anthropic directly. OpenRouter then routes to whatever model you've configured. The `ANTHROPIC_DEFAULT_*_MODEL` env vars tell the SDK which model ID to send when you use aliases like `sonnet` or `opus`.
+
+### Compatibility
+
+Most models on OpenRouter support the core agent capabilities (tool use, streaming, multi-turn). Models with strong tool-use support (Claude, GPT-4o, Qwen, DeepSeek) work best. Smaller or older models may struggle with complex tool chains.
+
+Browse available models at [openrouter.ai/models](https://openrouter.ai/models).
+
 ## Configuration
 
 Sandstorm uses a two-layer config system:
@@ -249,15 +323,16 @@ curl -N -X POST https://your-sandstorm-host/query \
 
 ### Providers
 
-Sandstorm supports Anthropic (default), Google Vertex AI, Amazon Bedrock, and Microsoft Azure.
+Sandstorm supports Anthropic (default), Google Vertex AI, Amazon Bedrock, Microsoft Azure, [OpenRouter](#openrouter), and custom API proxies. Add the env vars to `.env` and restart -- the SDK detects them automatically.
 
 | Provider | Key env vars |
 |----------|-------------|
+| **Anthropic** (default) | `ANTHROPIC_API_KEY` |
+| **[OpenRouter](#openrouter)** | `ANTHROPIC_BASE_URL`, `OPENROUTER_API_KEY` (see [OpenRouter](#openrouter)) |
 | **Vertex AI** | `CLAUDE_CODE_USE_VERTEX=1`, `CLOUD_ML_REGION`, `ANTHROPIC_VERTEX_PROJECT_ID` |
 | **Bedrock** | `CLAUDE_CODE_USE_BEDROCK=1`, `AWS_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` |
 | **Azure** | `CLAUDE_CODE_USE_FOUNDRY=1`, `AZURE_FOUNDRY_RESOURCE`, `AZURE_API_KEY` |
-
-Add the vars to `.env` and restart. The Claude Agent SDK detects them automatically and routes requests to the right provider.
+| **Custom proxy** | `ANTHROPIC_BASE_URL`, `ANTHROPIC_AUTH_TOKEN` (optional) |
 
 ## API Reference
 
@@ -267,6 +342,7 @@ Add the vars to `.env` and restart. The Claude Agent SDK detects them automatica
 |-------|------|----------|---------|-------------|
 | `prompt` | `string` | Yes | -- | The task for the agent (min 1 char) |
 | `anthropic_api_key` | `string` | No | `$ANTHROPIC_API_KEY` | Anthropic key (falls back to env) |
+| `openrouter_api_key` | `string` | No | `$OPENROUTER_API_KEY` | OpenRouter key (falls back to env) |
 | `e2b_api_key` | `string` | No | `$E2B_API_KEY` | E2B key (falls back to env) |
 | `model` | `string` | No | from config | Overrides `sandstorm.json` model |
 | `max_turns` | `integer` | No | from config | Overrides `sandstorm.json` max_turns |

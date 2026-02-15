@@ -44,8 +44,13 @@ _PROVIDER_ENV_KEYS = [
     "CLAUDE_CODE_USE_FOUNDRY",
     "AZURE_FOUNDRY_RESOURCE",
     "AZURE_API_KEY",
-    # Custom base URL (proxy, self-hosted)
+    # Custom base URL (proxy, self-hosted, OpenRouter)
     "ANTHROPIC_BASE_URL",
+    "ANTHROPIC_AUTH_TOKEN",
+    # Model name overrides (remap SDK aliases to provider model IDs)
+    "ANTHROPIC_DEFAULT_SONNET_MODEL",
+    "ANTHROPIC_DEFAULT_OPUS_MODEL",
+    "ANTHROPIC_DEFAULT_HAIKU_MODEL",
 ]
 
 
@@ -137,6 +142,18 @@ async def run_agent_in_sandbox(
         val = os.environ.get(key)
         if val:
             sandbox_envs[key] = val
+
+    # Per-request OpenRouter key overrides env var
+    if request.openrouter_api_key:
+        sandbox_envs["ANTHROPIC_AUTH_TOKEN"] = request.openrouter_api_key
+
+    # When using a custom base URL with auth token (e.g. OpenRouter), the SDK
+    # must NOT receive a real ANTHROPIC_API_KEY — otherwise it validates model
+    # names against Anthropic's API and rejects non-Claude models.
+    if sandbox_envs.get("ANTHROPIC_BASE_URL") and sandbox_envs.get(
+        "ANTHROPIC_AUTH_TOKEN"
+    ):
+        sandbox_envs["ANTHROPIC_API_KEY"] = ""
 
     # Eagerly read GCP credentials file (TOCTOU fix: read now, upload later)
     gcp_creds_content = None
