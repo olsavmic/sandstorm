@@ -504,9 +504,7 @@ async def run_agent_in_sandbox(
         sandbox_started()
 
         # Upload extra skills that aren't already in the sandbox
-        extra_skills_to_upload = {
-            k: v for k, v in merged_skills.items() if k not in disk_skills
-        }
+        extra_skills_to_upload = {k: v for k, v in merged_skills.items() if k not in disk_skills}
         if extra_skills_to_upload:
             await _upload_skills(sbx, extra_skills_to_upload, request_id)
 
@@ -585,9 +583,7 @@ async def run_agent_in_sandbox(
             # sandbox image — only upload extra skills that aren't in the template.
             skills_to_upload = merged_skills
             if sandstorm_config.get("template_skills"):
-                skills_to_upload = {
-                    k: v for k, v in merged_skills.items() if k not in disk_skills
-                }
+                skills_to_upload = {k: v for k, v in merged_skills.items() if k not in disk_skills}
             if skills_to_upload:
                 await _upload_skills(sbx, skills_to_upload, request_id)
 
